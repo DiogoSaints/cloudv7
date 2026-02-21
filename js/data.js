@@ -28,8 +28,20 @@ function forceProxyUrl(targetUrl) {
 // For API calls: use proxy if configured, else try direct
 function proxyUrl(targetUrl) {
   const proxy = window.CLOUDFLIX_PROXY;
-  if (!_isHosted || !proxy) return targetUrl.replace(/^http:\/\//i, 'https://');
-  return proxy + '?url=' + encodeURIComponent(targetUrl.replace(/^http:\/\//i, 'https://'));
+  const safeUrl = forceHttps(targetUrl);
+  if (!_isHosted || !proxy) return safeUrl;
+  return proxy + '?url=' + encodeURIComponent(safeUrl);
+}
+
+// Global utility to force HTTPS and remove problematic port 80
+function forceHttps(url) {
+  if (!url) return '';
+  // 1. Force https protocol
+  let s = url.replace(/^http:\/\//i, 'https://');
+  // 2. If it's https, port 80 is invalid and causes ERR_SSL_PROTOCOL_ERROR. Remove it.
+  // Matches ":80" or ":80/" at the end of hostname or before the path
+  s = s.replace(/([a-zA-Z0-9.-]+):80(\/|$)/, '$1$2');
+  return s;
 }
 
 
@@ -52,7 +64,7 @@ const XTREAM = {
 
   api(action, extra = '') {
     const c = getXtreamCreds();
-    const raw = `${c.host}/player_api.php?username=${c.user}&password=${c.pass}&action=${action}${extra}`.replace(/^http:\/\//i, 'https://');
+    const raw = `${c.host}/player_api.php?username=${c.user}&password=${c.pass}&action=${action}${extra}`;
     return proxyUrl(raw);
   },
   liveUrl(streamId) {

@@ -65,8 +65,9 @@ const _apiIsHosted = location.protocol === 'http:' || location.protocol === 'htt
 
 function _proxyApiUrl(rawUrl) {
     const proxy = window.CLOUDFLIX_PROXY;
-    if (!_apiIsHosted || !proxy) return rawUrl.replace(/^http:\/\//i, 'https://');
-    return proxy + '?url=' + encodeURIComponent(rawUrl.replace(/^http:\/\//i, 'https://'));
+    const safeUrl = typeof forceHttps === 'function' ? forceHttps(rawUrl) : rawUrl.replace(/^http:\/\//i, 'https://');
+    if (!_apiIsHosted || !proxy) return safeUrl;
+    return proxy + '?url=' + encodeURIComponent(safeUrl);
 }
 
 async function _fetchFromEndpoint(rawUrl) {
@@ -152,7 +153,7 @@ function _scheduleRenewal(creds) {
 // ── Public: Initialize access ──────────────────────────────
 window.initCloudflixAccess = async function () {
     // Chatbot API is offline (405). Skip entirely – fallback creds in data.js handle it.
-    console.log('[CLOUDFLIX API] Using static fallback credentials (chatbot API disabled).');
+    console.log('[CLOUDFLIX] Sistema de acesso pronto (modo estático ativado).');
     return null;
 };
 

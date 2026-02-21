@@ -547,7 +547,7 @@ function buildCard(item, type) {
     card.tabIndex = 0;
 
     const isLive = type === 'live';
-    const thumb = (item.stream_icon || item.cover || item.backdrop_path || '').replace(/^http:\/\//i, 'https://');
+    const thumb = forceHttps(item.stream_icon || item.cover || item.backdrop_path || '');
     const name = item.name || item.title || item.movie_name || 'Sem título';
     const info = item.rating ? `⭐ ${item.rating}` : item.releaseDate ? item.releaseDate.split('-')[0] : (item.year || '');
 

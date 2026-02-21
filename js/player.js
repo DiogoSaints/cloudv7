@@ -376,7 +376,7 @@ function renderEpisodeList(episodes, activeEpId) {
         item.className = 'ep-item' + (String(ep.id) === String(activeEpId) ? ' playing' : '');
 
         // Try to get a thumbnail if available, otherwise use a placeholder number
-        const thumb = (ep.info?.movie_image || '').replace(/^http:\/\//i, 'https://');
+        const thumb = forceHttps(ep.info?.movie_image || '');
         const thumbHtml = thumb ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover; border-radius:4px;">` : `<span>${ep.episode_num || '?'}</span>`;
 
         item.innerHTML = `

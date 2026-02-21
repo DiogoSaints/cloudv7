@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CLOUDFLIX – Admin</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+    <style>
+        /* ── ADMIN LOGIN OVERLAY ── */
+        #admin-login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(10, 10, 10, 0.97);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .admin-login-box {
+            background: #16161f;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .admin-login-logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .admin-login-logo .cloud {
+            color: #FF6B00;
+        }
+
+        .admin-login-badge {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+
+        .admin-login-box h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .admin-login-box p {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 24px;
+        }
+
+        .aif {
+            margin-bottom: 16px;
+        }
+
+        .aif label {
+            display: block;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .aif input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .aif input:focus {
+            border-color: #FF6B00;
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2);
+        }
+
+        .admin-login-btn {
+            width: 100%;
+            padding: 13px;
+            background: #FF6B00;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .admin-login-btn:hover {
+            background: #E05E00;
+            transform: translateY(-1px);
+        }
+
+        .admin-login-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .admin-login-err {
+            background: rgba(255, 107, 0, 0.1);
+            border: 1px solid rgba(255, 107, 0, 0.3);
+            color: #FFAA55;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .admin-login-err.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── ADMIN LOGIN OVERLAY ── -->
+    <div id="admin-login-overlay">
+        <div class="admin-login-box">
+            <div class="admin-login-logo"><span class="cloud">CLOUD</span>FLIX</div>
+            <div class="admin-login-badge">Painel Administrativo</div>
+            <h2>Acesso Restrito</h2>
+            <p>Entre com suas credenciais de administrador.</p>
+            <form id="admin-login-form" novalidate>
+                <div class="aif">
+                    <label>E-mail</label>
+                    <input type="email" id="al-email" placeholder="admin@cloudflix.com" autocomplete="email" required />
+                </div>
+                <div class="aif">
+                    <label>Senha</label>
+                    <input type="password" id="al-password" placeholder="••••••••" autocomplete="current-password"
+                        required />
+                </div>
+                <button type="submit" class="admin-login-btn" id="al-btn">Entrar no Painel</button>
+                <div class="admin-login-err" id="al-err">E-mail ou senha incorretos.</div>
+            </form>
+        </div>
+    </div>
+    <div class="admin-layout">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <a href="home.html" class="logo">CLOUD<span>FLIX</span></a>
+                <span class="admin-badge">ADMIN</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-label">Principal</div>
+                    <button class="sidebar-item active" data-panel="dashboard" onclick="showPanel('dashboard', this)">
+                        📊 Dashboard
+                    </button>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-label">Conteúdo</div>
+                    <button class="sidebar-item" data-panel="channels" onclick="showPanel('channels', this)">
+                        📺 Canais ao Vivo <span class="count" id="count-channels">—</span>
+                    </button>
+                    <button class="sidebar-item" data-panel="movies" onclick="showPanel('movies', this)">
+                        🎬 Filmes <span class="count" id="count-movies">—</span>
+                    </button>
+                    <button class="sidebar-item" data-panel="series" onclick="showPanel('series', this)">
+                        🎭 Séries <span class="count" id="count-series">—</span>
+                    </button>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-label">Gestão</div>
+                    <button class="sidebar-item" data-panel="users" onclick="showPanel('users', this)">
+                        👥 Usuários <span class="count" id="count-users">—</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="home.html" class="sidebar-item">← Ver como membro</a>
+                <button class="sidebar-item" style="color:var(--accent)" onclick="logout()">🚪 Sair</button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN ── -->
+        <main class="admin-main">
+
+            <!-- Top bar -->
+            <div class="admin-topbar">
+                <div>
+                    <h1 id="panel-title">Dashboard</h1>
+                    <p id="panel-subtitle">Visão geral da plataforma</p>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center">
+                    <button class="btn btn-primary btn-sm" id="add-btn" style="display:none" onclick="openAddModal()">+
+                        Adicionar</button>
+                    <a href="home.html" class="btn btn-ghost btn-sm">🏠 Home</a>
+                </div>
+            </div>
+
+            <div class="admin-content">
+
+                <!-- ── DASHBOARD ── -->
+                <div class="panel-section active" id="panel-dashboard">
+                    <div class="stats-grid" id="stats-grid"></div>
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h2>Conteúdo Recente</h2>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Thumb</th>
+                                    <th>Título</th>
+                                    <th>Tipo</th>
+                                    <th>Categoria</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── CHANNELS ── -->
+                <div class="panel-section" id="panel-channels">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h2>Canais ao Vivo</h2>
+                            <input type="text" class="table-search" placeholder="🔍 Buscar canal…"
+                                oninput="filterTable('channel', this.value)" />
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Thumb</th>
+                                    <th>Nome</th>
+                                    <th>Categoria</th>
+                                    <th>Slug</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="channels-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── MOVIES ── -->
+                <div class="panel-section" id="panel-movies">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h2>Filmes</h2>
+                            <input type="text" class="table-search" placeholder="🔍 Buscar filme…"
+                                oninput="filterTable('movie', this.value)" />
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Thumb</th>
+                                    <th>Título</th>
+                                    <th>Gênero</th>
+                                    <th>Ano</th>
+                                    <th>Slug</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movies-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── SERIES ── -->
+                <div class="panel-section" id="panel-series">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h2>Séries</h2>
+                            <input type="text" class="table-search" placeholder="🔍 Buscar série…"
+                                oninput="filterTable('serie', this.value)" />
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Thumb</th>
+                                    <th>Título</th>
+                                    <th>Gênero</th>
+                                    <th>Temporadas</th>
+                                    <th>Slug</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="series-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── USERS ── -->
+                <div class="panel-section" id="panel-users">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h2>Usuários</h2>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Avatar</th>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Role</th>
+                                    <th>Plano</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div><!-- end admin-content -->
+        </main>
+    </div>
+
+    <!-- ── ADD/EDIT MODAL ── -->
+    <div class="modal-overlay" id="content-modal" style="display:none"
+        onclick="e => { if(e.target===this) closeModal(); }">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 class="modal-title" id="modal-title">Adicionar Conteúdo</h2>
+            <form id="content-form" onsubmit="saveContent(event)">
+                <div class="form-grid">
+                    <div class="input-group full-width">
+                        <label>Tipo *</label>
+                        <select id="f-type" required onchange="updateFormForType()">
+                            <option value="canal">📺 Canal ao Vivo</option>
+                            <option value="filme">🎬 Filme</option>
+                            <option value="serie">🎭 Série</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Título *</label>
+                        <input type="text" id="f-title" placeholder="Nome do conteúdo" required />
+                    </div>
+                    <div class="input-group">
+                        <label>Slug (URL) *</label>
+                        <input type="text" id="f-slug" placeholder="ex: globo" required />
+                    </div>
+                    <div class="input-group">
+                        <label>Categoria *</label>
+                        <input type="text" id="f-category" placeholder="Ex: Esportes, Ação…" required />
+                    </div>
+                    <div class="input-group" id="f-year-group">
+                        <label>Ano</label>
+                        <input type="number" id="f-year" placeholder="2025" min="1900" max="2099" />
+                    </div>
+                    <div class="input-group" id="f-seasons-group" style="display:none">
+                        <label>Temporadas</label>
+                        <input type="number" id="f-seasons" placeholder="1" min="1" />
+                    </div>
+                    <div class="input-group full-width">
+                        <label>URL da Thumbnail</label>
+                        <input type="url" id="f-thumb" placeholder="https://…" />
+                    </div>
+                    <div class="input-group full-width">
+                        <label>Descrição</label>
+                        <input type="text" id="f-desc" placeholder="Breve descrição…" />
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">💾 Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── USER MODAL ── -->
+    <div class="modal-overlay" id="user-modal" style="display:none">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 class="modal-title" id="user-modal-title">Editar Usuário</h2>
+            <form id="user-form" onsubmit="saveUser(event)">
+                <input type="hidden" id="u-id" />
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Nome *</label>
+                        <input type="text" id="u-name" required />
+                    </div>
+                    <div class="input-group">
+                        <label>E-mail *</label>
+                        <input type="email" id="u-email" required />
+                    </div>
+                    <div class="input-group">
+                        <label>Senha</label>
+                        <input type="password" id="u-password" placeholder="Deixe em branco para não alterar" />
+                    </div>
+                    <div class="input-group">
+                        <label>Role</label>
+                        <select id="u-role">
+                            <option value="member">Membro</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="input-group full-width">
+                        <label>Plano</label>
+                        <select id="u-plan">
+                            <option value="Basic">Basic</option>
+                            <option value="Premium">Premium</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">💾 Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── TOAST ── -->
+    <div id="toast-container"></div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // ── Admin gate: show panel if already logged in as admin ──
+        (function () {
+            const overlay = document.getElementById('admin-login-overlay');
+            const u = getCurrentUser();
+            if (u && u.role === 'admin') {
+                overlay.style.display = 'none';
+            }
+
+            document.getElementById('admin-login-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const btn = document.getElementById('al-btn');
+                const err = document.getElementById('al-err');
+                const email = document.getElementById('al-email').value.trim();
+                const pass = document.getElementById('al-password').value;
+
+                btn.classList.add('loading');
+                btn.textContent = 'Verificando...';
+                err.classList.remove('show');
+
+                setTimeout(() => {
+                    const result = login(email, pass);
+                    if (result.success && result.user.role === 'admin') {
+                        btn.textContent = '✓ Acesso liberado!';
+                        overlay.style.display = 'none';
+                        // Load admin panel now that user is authenticated
+                        if (typeof initAdmin === 'function') initAdmin();
+                    } else {
+                        err.textContent = result.success ? 'Sua conta não tem permissão de admin.' : result.message;
+                        err.classList.add('show');
+                        btn.classList.remove('loading');
+                        btn.textContent = 'Entrar no Painel';
+                        document.getElementById('al-password').value = '';
+                    }
+                }, 500);
+            });
+        })();
+    </script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

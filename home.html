@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CLOUDFLIX – Início</title>
+    <meta name="description" content="Assista canais ao vivo, filmes e séries na CLOUDFLIX." />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/home.css" />
+</head>
+
+<body>
+
+    <!-- ── HEADER ── -->
+    <header class="header" id="main-header">
+        <div class="header-left">
+            <a href="home.html" class="logo">CLOUD<span>FLIX</span></a>
+            <nav class="nav-links">
+                <button class="nav-link active" data-filter="all">Início</button>
+                <button class="nav-link" data-filter="canais">📺 Canais</button>
+                <button class="nav-link" data-filter="filmes">🎬 Filmes</button>
+                <button class="nav-link" data-filter="series">🎭 Séries</button>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="search-bar" id="search-bar">
+                <input type="text" id="search-input" placeholder="Buscar conteúdo..." />
+                <span class="search-icon" id="search-icon">🔍</span>
+            </div>
+            <div style="position:relative">
+                <button class="avatar-btn" id="avatar-btn" aria-label="Meu perfil">
+                    <span id="user-initial">U</span>
+                </button>
+                <div class="user-menu" id="user-menu">
+                    <div class="user-info">
+                        <div class="name" id="user-name">Usuário</div>
+                        <div class="email" id="user-email">email@cloudflix.com</div>
+                    </div>
+                    <div class="user-menu-divider"></div>
+                    <button class="user-menu-item danger" onclick="logout()">
+                        🚪 Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── SEARCH OVERLAY ── -->
+    <div id="search-overlay" class="search-overlay"></div>
+
+    <!-- ── HERO ── -->
+    <section class="hero" id="hero-section">
+        <!-- Background image element (controlled by JS) -->
+        <img id="hero-bg-img" class="hero-bg-img" src="" alt="" aria-hidden="true" />
+        <div class="hero-content">
+            <div class="hero-badge">🔥 Em Destaque</div>
+            <h1 class="hero-title">Carregando...</h1>
+            <p class="hero-desc"></p>
+            <div class="hero-actions">
+                <a href="#" class="btn btn-primary btn-lg">▶ Assistir Agora</a>
+                <a href="#" class="btn btn-secondary btn-lg">ℹ Mais Detalhes</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── FILTERS BAR ── -->
+    <div class="filters-bar" id="filters-bar">
+        <button class="filter-chip active" data-filter="all">Todos</button>
+        <button class="filter-chip" data-filter="canais">📺 Canais ao Vivo</button>
+        <button class="filter-chip" data-filter="filmes">🎬 Filmes</button>
+        <button class="filter-chip" data-filter="series">🎭 Séries</button>
+    </div>
+
+    <!-- ── CONTENT ── -->
+    <main id="content-main" class="content-main"></main>
+
+    <!-- ── FOOTER ── -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <span class="logo" style="font-size:18px">CLOUD<span>FLIX</span></span>
+            <div class="footer-links">
+                <a href="#">Termos de Uso</a>
+                <a href="#">Privacidade</a>
+                <a href="#">Suporte</a>
+            </div>
+            <span class="footer-copy">© 2026 CLOUDFLIX</span>
+        </div>
+    </footer>
+
+    <!-- ── TOAST ── -->
+    <div id="toast-container"></div>
+
+    <script src="js/auth.js?v=3"></script>
+    <script src="js/api.js?v=3"></script>
+    <script src="js/data.js?v=3"></script>
+    <script src="js/home.js?v=3"></script>
+</body>
+
+</html>

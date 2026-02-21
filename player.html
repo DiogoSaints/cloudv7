@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CLOUDFLIX – Player</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- HLS.js for live/HLS streams (pinned stable version) -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+    <style>
+        :root {
+            --sidebar-width: 380px;
+            --player-max-height: 75vh;
+        }
+
+        body {
+            background: #050507;
+            margin: 0;
+            color: #fff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Layout Container */
+        .player-page {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 80px;
+            /* Room for fixed topbar */
+        }
+
+        /* Top bar - Fixed and persistent */
+        .player-topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 40px;
+            background: rgba(5, 5, 7, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .player-back {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+        }
+
+        .player-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-5px);
+        }
+
+        .player-title-bar {
+            font-size: 18px;
+            font-weight: 700;
+            flex: 1;
+            text-align: center;
+            color: #fff;
+        }
+
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr var(--sidebar-width);
+            gap: 0;
+            flex: 1;
+            max-width: 100%;
+        }
+
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            :root {
+                --sidebar-width: 100%;
+                --player-max-height: 50vh;
+            }
+
+            .player-main {
+                padding: 0 15px 40px;
+            }
+
+            .player-sidebar {
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+                height: auto;
+                position: static;
+            }
+
+            .sidebar-header,
+            .ep-seasons,
+            .ep-list {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+
+            .video-title {
+                font-size: 24px;
+            }
+
+            .player-topbar {
+                padding: 10px 15px;
+                height: 60px;
+            }
+
+            .player-page {
+                padding-top: 60px;
+            }
+
+            .player-topbar .player-back {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            .player-title-bar {
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 0 10px;
+            }
+        }
+
+
+        /* Left Column: Player + Info */
+        .player-main {
+            padding: 0 40px 60px;
+            overflow-y: auto;
+        }
+
+        .video-wrapper {
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            position: relative;
+            background: #000;
+            aspect-ratio: 16 / 9;
+            max-height: var(--player-max-height);
+        }
+
+        .video-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: default;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Info Area */
+        .video-info-area {
+            max-width: 1000px;
+        }
+
+        .video-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .video-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .meta-tag {
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .video-description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 40px;
+            max-width: 800px;
+        }
+
+        /* Sidebar: Episode List */
+        .player-sidebar {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0;
+            height: calc(100vh - 80px);
+            position: sticky;
+            top: 80px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 24px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .ep-seasons {
+            display: flex;
+            gap: 8px;
+            padding: 15px 30px;
+            overflow-x: auto;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            scrollbar-width: none;
+        }
+
+        .ep-season-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .ep-season-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .ep-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .ep-item {
+            display: flex;
+            gap: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            align-items: center;
+        }
+
+        .ep-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .ep-item.playing {
+            background: rgba(255, 107, 0, 0.1);
+            border-left: 3px solid var(--accent);
+        }
+
+        .ep-thumb {
+            width: 100px;
+            height: 56px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .ep-details {
+            flex: 1;
+        }
+
+        .ep-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .ep-meta {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* CUSTOM CONTROLS OVERLAY (only when not native fullscreen) */
+        .player-controls {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.5) 100%);
+            transition: opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .video-wrapper.controls-visible .player-controls {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .big-play-pause {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(255, 107, 0, 0.9);
+            color: #fff;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .big-play-pause:hover {
+            transform: scale(1.1);
+        }
+
+        .controls-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 25px 25px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .progress-current {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            width: 0;
+        }
+
+        .progress-loaded {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            width: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .controls-left,
+        .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .ctrl-icon-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .ctrl-icon-btn:hover {
+            color: var(--accent);
+        }
+
+        .time-display {
+            font-size: 13px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #volume-slider {
+            width: 80px;
+            height: 3px;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        #volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        /* Fullscreen handling */
+        :fullscreen .video-wrapper {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            max-height: 100vh;
+            border-radius: 0;
+        }
+
+        /* Overlay helpers */
+        .loading-overlay,
+        .error-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .show {
+            display: flex !important;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 107, 0, 0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .ctrl-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Mobile specific adjustments for controls - Moved to bottom for CSS Cascade */
+        @media (max-width: 600px) {
+            .big-play-pause {
+                width: 42px !important;
+                /* Reduzi ainda mais conforme pedido */
+                height: 42px !important;
+                font-size: 16px !important;
+            }
+
+            .controls-bottom {
+                padding: 10px 15px 20px;
+            }
+
+            .volume-container {
+                display: none !important;
+            }
+
+            .controls-row {
+                gap: 10px;
+            }
+
+            .ctrl-icon-btn {
+                font-size: 16px;
+            }
+
+            .time-display {
+                font-size: 11px;
+            }
+
+            .video-wrapper {
+                margin-bottom: 20px;
+                border-radius: 0;
+            }
+        }
+
+        /* Extra small smartphones (< 400px) */
+        @media (max-width: 400px) {
+            .player-topbar {
+                padding: 10px;
+            }
+
+            .player-main {
+                padding: 0 10px 30px;
+            }
+
+            .player-title-bar {
+                font-size: 13px;
+            }
+
+            .topbar-spacer {
+                display: none !important;
+            }
+
+            .video-title {
+                font-size: 20px;
+            }
+
+            .ep-item {
+                padding: 8px;
+                gap: 10px;
+            }
+
+            .ep-thumb {
+                width: 80px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="player-page" id="player-page">
+        <!-- Persistent Top Bar -->
+        <header class="player-topbar">
+            <a href="home.html" class="player-back">← Voltar</a>
+            <h2 class="player-title-bar" id="player-title">Carregando…</h2>
+            <div style="width: 120px;" class="topbar-spacer"></div> <!-- Spacer -->
+        </header>
+
+        <!-- Main Cinema Grid -->
+        <main class="content-grid">
+            <!-- Left: Player & Description -->
+            <section class="player-main">
+                <div class="video-wrapper">
+                    <div class="video-container" id="video-container">
+                        <video id="main-video" playsinline></video>
+
+                        <!-- Custom Controls Overlay -->
+                        <div class="player-controls" id="player-controls">
+                            <!-- Center large play/pause toggle -->
+                            <button class="big-play-pause" id="big-play-pause" onclick="togglePlayPause()">
+                                <span id="big-play-icon">▶</span>
+                            </button>
+
+                            <!-- Bottom Controls Bar -->
+                            <div class="controls-bottom">
+                                <!-- Progress Bar -->
+                                <div class="progress-container" id="progress-container">
+                                    <div class="progress-loaded" id="progress-loaded"></div>
+                                    <div class="progress-current" id="progress-current"></div>
+                                </div>
+
+                                <div class="controls-row">
+                                    <div class="controls-left">
+                                        <button class="ctrl-icon-btn" onclick="togglePlayPause()" id="play-pause-btn">
+                                            <span id="btn-play-icon">▶</span>
+                                        </button>
+                                        <button class="ctrl-icon-btn" onclick="skip(-10)" title="Voltar 10s">
+                                            <span>⏪</span>
+                                        </button>
+                                        <button class="ctrl-icon-btn" onclick="skip(10)" title="Avançar 10s">
+                                            <span>⏩</span>
+                                        </button>
+                                        <div class="time-display">
+                                            <span id="time-current">00:00</span> / <span id="time-total">00:00</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="controls-right">
+                                        <div class="volume-container"
+                                            style="display:flex; align-items:center; gap:10px;">
+                                            <button class="ctrl-icon-btn" onclick="toggleMute()" id="mute-btn">
+                                                <span id="mute-icon">🔊</span>
+                                            </button>
+                                            <input type="range" id="volume-slider" min="0" max="1" step="0.05"
+                                                value="1">
+                                        </div>
+                                        <button class="ctrl-icon-btn" onclick="toggleFullscreen()" title="Tela Cheia">
+                                            <span>⛶</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loading Overlay -->
+                        <div class="loading-overlay" id="loading-overlay">
+                            <div class="spinner"></div>
+                            <div id="loading-name" style="font-weight:700">Conectando ao stream…</div>
+                        </div>
+
+                        <!-- Error Overlay -->
+                        <div class="error-overlay" id="error-overlay" style="display:none">
+                            <div style="font-size:52px; margin-bottom:20px;">📡</div>
+                            <h2 style="margin-bottom:10px;">Transmissão indisponível</h2>
+                            <p id="error-msg" style="color:rgba(255,255,255,0.6); margin-bottom:30px;">Ocorreu um
+                                problema ao carregar este conteúdo.</p>
+                            <div style="display:flex; gap:15px;">
+                                <button class="ctrl-btn" onclick="retryPlay()">Tentar Recomessar</button>
+                                <a href="home.html" class="ctrl-btn" style="background:rgba(255,255,255,0.1)">Voltar ao
+                                    Início</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Area below video -->
+                <div class="video-info-area">
+                    <h1 class="video-title" id="video-title-display">Título do Conteúdo</h1>
+                    <div class="video-meta">
+                        <span class="meta-tag" id="player-badge">HD</span>
+                        <span id="video-year">2026</span>
+                        <span>•</span>
+                        <span id="video-genre">Portal IPTV</span>
+                    </div>
+                    <div class="video-description" id="player-desc">
+                        Carregando descrição...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Sidebar: Episode List -->
+            <aside class="player-sidebar" id="player-sidebar">
+                <div class="sidebar-header">
+                    <h3 id="ep-series-title">Episódios</h3>
+                </div>
+                <div class="ep-seasons" id="ep-seasons"></div>
+                <div class="ep-list" id="ep-list">
+                    <div style="padding:40px; text-align:center; color:rgba(255,255,255,0.3)">
+                        Nenhum episódio disponível.
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="js/auth.js?v=3"></script>
+    <script src="js/api.js?v=3"></script>
+    <script src="js/data.js?v=3"></script>
+    <script src="js/player.js?v=3"></script>
+</body>
+
+</html>
